@@ -1,60 +1,97 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>🎉 Chào mừng bạn!</title>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📍 Check Location</title>
     <style>
-        *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto;background:linear-gradient(135deg,#667eea,#764ba2);min-height:100vh;display:flex;align-items:center;justify-content:center;color:white}
-        .container{max-width:450px;width:90%;background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);padding:40px;border-radius:25px;text-align:center;box-shadow:0 20px 40px rgba(0,0,0,0.1)}
-        h1{font-size:2.5em;margin-bottom:15px}
-        p{font-size:1.1em;margin-bottom:30px;opacity:0.9}
-        #status{padding:20px;border-radius:15px;margin:25px 0;font-size:1.1em;font-weight:500;min-height:25px}
-        .loading{background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3)}
-        .success{background:rgba(46,204,113,0.2);border:1px solid #27ae60;color:#2ecc71}
-        .error{background:rgba(231,76,60,0.2);border:1px solid #e74c3c;color:#e74c3c}
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{font-family:system-ui;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;}
+        .container{background:white;padding:2rem;border-radius:20px;box-shadow:0 20px 40px rgba(0,0,0,0.1);text-align:center;max-width:400px;width:90%;}
+        h1{color:#333;margin-bottom:1rem;font-size:2rem;}
+        .status{margin:1rem 0;padding:1rem;border-radius:10px;font-weight:500;}
+        .status.tracking{background:#d1ecf1;color:#0c5460;}
+        .status.success{background:#d4edda;color:#155724;}
+        .status.error{background:#f8d7da;color:#721c24;}
+        .track-btn{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;border:none;padding:1rem 2rem;font-size:1.1rem;border-radius:50px;cursor:pointer;width:100%;transition:transform .2s;}
+        .track-btn:hover{transform:translateY(-2px);}
+        .track-btn:disabled{opacity:.6;cursor:not-allowed;}
+        .result{margin-top:2rem;text-align:left;}
+        #coords{background:#f8f9fa;padding:1rem;border-radius:10px;margin-bottom:1rem;font-family:monospace;word-break:break-all;}
+        .hidden{display:none!important;}
+        #map{height:200px;background:#e9ecef;border-radius:10px;margin-top:1rem;}
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🎉 Chào mừng!</h1>
-        <p>Chạm vào link này thật tuyệt! Chúng tôi đang xác định vị trí của bạn...</p>
-        <div id="status" class="loading">📍 Đang lấy vị trí GPS...</div>
+        <h1>📍 Check Your Location</h1>
+        <p>Nhấn nút để chia sẻ vị trí</p>
+        <div id="status" class="status">Sẵn sàng...</div>
+        <button id="trackBtn" class="track-btn">📱 Share Location</button>
+        <div id="result" class="result hidden">
+            <h3>✅ Vị trí của bạn:</h3>
+            <div id="coords"></div>
+            <div id="map"></div>
+        </div>
     </div>
-    
     <script>
-        navigator.geolocation.getCurrentPosition(
-            position => {
-                const data = {
-                    latitude: position.coords.latitude,
-                    longitude: position.coords.longitude,
-                    accuracy: Math.round(position.coords.accuracy),
-                    timestamp: new Date().toISOString(),
-                    userAgent: navigator.userAgent.slice(0,100)
-                };
-                
-                // Gửi dữ liệu (sẽ lưu ở server)
-                fetch('/track', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(data)
-                }).catch(e=>console.log('Track saved:', data));
-                
-                document.getElementById('status').innerHTML = 
-                    `✅ Đã lưu vị trí!<br><small>Độ chính xác: ${data.accuracy}m</small>`;
-                document.getElementById('status').className = 'success';
-            },
-            error => {
-                document.getElementById('status').innerHTML = '❌ Cần bật GPS/Dịch vụ vị trí';
-                document.getElementById('status').className = 'error';
-            },
-            {
-                enableHighAccuracy: true,
-                timeout: 15000,
-                maximumAge: 30000
+        document.addEventListener('DOMContentLoaded',function(){
+            const trackBtn=document.getElementById('trackBtn');
+            const status=document.getElementById('status');
+            const result=document.getElementById('result');
+            const coordsDiv=document.getElementById('coords');
+            const mapDiv=document.getElementById('map');
+
+            trackBtn.addEventListener('click',getLocation);
+
+            function getLocation(){
+                status.textContent='Đang lấy vị trí...';
+                status.className='status tracking';
+                trackBtn.disabled=true;
+
+                if(!navigator.geolocation){
+                    showError('Trình duyệt không hỗ trợ');
+                    return;
+                }
+
+                navigator.geolocation.getCurrentPosition(onLocationSuccess,onLocationError,{enableHighAccuracy:true,timeout:10000});
             }
-        );
+
+            function onLocationSuccess(position){
+                const lat=position.coords.latitude;
+                const lng=position.coords.longitude;
+                const accuracy=position.coords.accuracy;
+                const timestamp=new Date().toLocaleString();
+
+                // 🔥 LOCATION DATA
+                const locationData={latitude:lat,longitude:lng,accuracy:accuracy+'m',timestamp:timestamp,link:window.location.href};
+                console.table(locationData);
+                alert(`📍 LOCATION:\n${lat}, ${lng}\nAcc: ${accuracy}m`);
+
+                status.textContent='✅ Thành công!';
+                status.className='status success';
+
+                coordsDiv.innerHTML=`Lat: ${lat.toFixed(6)}<br>Lng: ${lng.toFixed(6)}<br>Acc: ${accuracy}m<br>Time: ${timestamp}`;
+                showMap(lat,lng);
+                result.classList.remove('hidden');
+                trackBtn.textContent='✅ Đã chia sẻ';
+            }
+
+            function onLocationError(error){
+                showError('Từ chối vị trí hoặc lỗi');
+            }
+
+            function showError(message){
+                status.textContent=message;
+                status.className='status error';
+                trackBtn.disabled=false;
+                trackBtn.textContent='Thử lại';
+            }
+
+            function showMap(lat,lng){
+                mapDiv.innerHTML=`<iframe width="100%" height="100%" frameborder="0" src="https://www.openstreetmap.org/export/embed.html?bbox=${lng-0.01},${lat-0.01},${lng+0.01},${lat+0.01}&layer=mapnik&marker=${lat},${lng}"></iframe>`;
+            }
+        });
     </script>
 </body>
 </html>
